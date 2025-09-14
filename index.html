@@ -1,94 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quorum Chat</title>
-  <!-- Add a simple background to prevent blue flash -->
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background-color: #111;
-      color: #fff;
-    }
-    #root {
-      padding: 20px;
-    }
-    .chat-message {
-      margin-bottom: 10px;
-    }
-    input {
-      padding: 8px;
-      font-size: 16px;
-      width: 80%;
-    }
-    button {
-      padding: 8px 12px;
-      font-size: 16px;
-      margin-left: 5px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quorum Site</title>
+<style>
+  body { margin:0; font-family:'Segoe UI',sans-serif; background:#1e1e2f; color:#fff; transition:0.3s; }
+  body.light { background:#f0f0f0; color:#111; }
+  #root { max-width:900px; margin:auto; padding:20px; transition:0.3s; }
+  .tabs { display:flex; margin-bottom:20px; flex-wrap:wrap; gap:5px; }
+  .tab { flex:1; padding:10px; cursor:pointer; text-align:center; background:#2e2e4f; border-radius:5px 5px 0 0; transition:0.2s; min-width:90px; }
+  .tab:hover { background:#3e3e6f; }
+  .tab.active { background:#4e4e7f; font-weight:bold; }
+  body.light .tab { background:#ddd; color:#111; }
+  body.light .tab.active { background:#bbb; color:#111; }
+  .chat-window { height:350px; overflow-y:auto; background:#2e2e4f; padding:10px; border-radius:5px; margin-bottom:10px; transition:0.3s; display:flex; flex-direction:column; }
+  body.light .chat-window { background:#eee; color:#111; }
+  .chat-message { margin-bottom:8px; display:flex; justify-content:flex-start; flex-wrap:wrap; }
+  .chat-bubble { padding:6px 10px; border-radius:10px; max-width:70%; word-wrap:break-word; }
+  .chat-username { font-weight:bold; margin-right:5px; }
+  .chat-time { font-size:0.8em; color:#aaa; margin-left:10px; white-space:nowrap; }
+  input, button { padding:8px; font-size:16px; border:none; border-radius:5px; }
+  input { flex:1; }
+  button { background:#4e4e7f; color:#fff; cursor:pointer; transition:0.2s; }
+  button:hover { background:#5e5e9f; }
+  body.light button { background:#999; color:#111; }
+  .chat-input { display:flex; gap:5px; margin-bottom:10px; }
+  table { width:100%; border-collapse: collapse; background:#2e2e4f; border-radius:5px; overflow:hidden; transition:0.3s; }
+  th, td { padding:10px; border-bottom:1px solid #444; text-align:left; }
+  th { background:#3e3e5f; }
+  body.light table, body.light th, body.light td { background:#ddd; color:#111; border-bottom:1px solid #bbb; }
+  @media(max-width:600px){ .chat-bubble{max-width:85%;} table, th, td{font-size:14px;} }
+</style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
 
-  <!-- React + ReactDOM -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Babel for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- React & Babel -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Your React App -->
-  <script type="text/babel">
-    const STORAGE_KEY = 'quorum_site_chats_v1';
+<!-- Firebase Compat -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    function loadChats() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      } catch (e) {
-        return [];
-      }
-    }
+<script type="text/babel">
+// --------- Firebase Config ---------
+const firebaseConfig = {
+  apiKey: "AIzaSyCHvfjuoQUP5E3AeNRty2RxJeUD-vOL_bI",
+  authDomain: "teachers-quorum-site.firebaseapp.com",
+  databaseURL: "https://teachers-quorum-site-default-rtdb.firebaseio.com",
+  projectId: "teachers-quorum-site",
+  storageBucket: "teachers-quorum-site.firebasestorage.app",
+  messagingSenderId: "1036871246524",
+  appId: "1:1036871246524:web:4a4dc6bd9e62f03d9a26b9",
+  measurementId: "G-ZGEJ03HH08"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-    function saveChats(chats) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
-    }
+// --------- React App ---------
+function App() {
+  const [tab,setTab]=React.useState('chat');
+  const [username,setUsername]=React.useState('');
+  const [input,setInput]=React.useState('');
+  const [messages,setMessages]=React.useState([]);
+  const [schedule,setSchedule]=React.useState([]);
+  const [dark,setDark]=React.useState(true);
+  const chatWindowRef=React.useRef();
 
-    function ChatApp() {
-      const [chats, setChats] = React.useState(loadChats());
-      const [input, setInput] = React.useState('');
+  React.useEffect(()=>{ document.body.className = dark ? '' : 'light'; },[dark]);
 
-      const sendMessage = () => {
-        if (!input.trim()) return;
-        const newChats = [...chats, input.trim()];
-        setChats(newChats);
-        saveChats(newChats);
-        setInput('');
-      };
+  // Load chat from Firebase
+  React.useEffect(()=>{
+    const chatRef = db.ref('messages');
+    chatRef.on('value', snapshot=>{
+      const data = snapshot.val() || {};
+      const chatArray = Object.values(data).sort((a,b)=>a.time-b.time);
+      setMessages(chatArray);
+    });
+  },[]);
 
-      return (
-        <div>
-          <h1>Quorum Chat</h1>
-          <div>
-            {chats.map((msg, idx) => (
-              <div key={idx} className="chat-message">{msg}</div>
-            ))}
-          </div>
-          <input
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && sendMessage()}
-            placeholder="Type a message..."
-          />
+  // Auto-scroll
+  React.useEffect(()=>{
+    if(chatWindowRef.current) chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
+  },[messages]);
+
+  // Load schedule from Google Sheets CSV
+  React.useEffect(()=>{
+    const sheetUrl='https://docs.google.com/spreadsheets/d/e/2PACX-1vR48S8GQkZM2S1PMXsXjE48eGwryPuD5efwj2_RCHPsbCiMAScSiH7qBNecZk_mCQqE6h5wKB6lHJYG/pub?output=csv';
+    fetch(sheetUrl).then(r=>r.text()).then(csvText=>{
+      const rows = csvText.trim().split('\n').map(r=>r.split(','));
+      setSchedule(rows);
+    });
+  },[]);
+
+  const sendMessage=()=>{
+    if(!username.trim()||!input.trim()) return;
+    const msg={user:username.trim(),text:input.trim(),time:Date.now()};
+    db.ref('messages').push(msg);
+    setInput('');
+  };
+
+  const clearChat=()=>{ if(confirm('Clear all chat?')) db.ref('messages').remove(); };
+  const formatTime=ts=>{ const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); };
+
+  const userColor=user=>{
+    let hash=0;
+    for(let i=0;i<user.length;i++){ hash=user.charCodeAt(i)+((hash<<5)-hash); }
+    const c=(hash&0x00FFFFFF).toString(16).toUpperCase();
+    return '#'+('00000'+c).slice(-6);
+  };
+
+  return (
+    <div>
+      <div className="tabs">
+        <div className={`tab ${tab==='chat'?'active':''}`} onClick={()=>setTab('chat')}>Chat</div>
+        <div className={`tab ${tab==='schedule'?'active':''}`} onClick={()=>setTab('schedule')}>Schedule</div>
+        <div className="tab" onClick={()=>setDark(!dark)}>{dark?'Light Mode':'Dark Mode'}</div>
+        <div className="tab" onClick={clearChat}>Clear Chat</div>
+      </div>
+
+      {tab==='chat' && <>
+        <div className="chat-window" ref={chatWindowRef}>
+          {messages.map((m,i)=>(
+            <div key={i} className="chat-message">
+              <div className="chat-bubble" style={{backgroundColor:userColor(m.user)}}>
+                <span className="chat-username">{m.user}:</span> {m.text}
+                <span className="chat-time">{formatTime(m.time)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="chat-input">
+          <input placeholder="Username" value={username} onChange={e=>setUsername(e.target.value)}/>
+          <input placeholder="Type a message..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'?sendMessage():null}/>
           <button onClick={sendMessage}>Send</button>
         </div>
-      );
-    }
+      </>}
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<ChatApp />);
-  </script>
+      {tab==='schedule' && <table>
+        <thead>
+          <tr>{schedule[0] && schedule[0].map((h,i)=><th key={i}>{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {schedule.slice(1).map((row,i)=><tr key={i}>{row.map((c,j)=><td key={j}>{c}</td>)}</tr>)}
+        </tbody>
+      </table>}
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
 </body>
 </html>
