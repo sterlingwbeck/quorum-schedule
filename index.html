@@ -1,46 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Quorum Schedule</title>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quorum Chat</title>
+  <!-- Add a simple background to prevent blue flash -->
   <style>
-    body { background:#111; color:white; font-family:sans-serif; padding:2rem; }
-    table { border-collapse:collapse; width:100%; }
-    th, td { border:1px solid #666; padding:6px 10px; }
-    th { background:#333; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #111;
+      color: #fff;
+    }
+    #root {
+      padding: 20px;
+    }
+    .chat-message {
+      margin-bottom: 10px;
+    }
+    input {
+      padding: 8px;
+      font-size: 16px;
+      width: 80%;
+    }
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body>
-  <div id="root">Loading...</div>
+  <div id="root"></div>
 
+  <!-- React + ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Your React App -->
   <script type="text/babel">
-    function App() {
-      const [rows, setRows] = React.useState([]);
-      React.useEffect(() => {
-        fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vR48S8GQkZM2S1PMXsXjE48eGwryPuD5efwj2_RCHPsbCiMAScSiH7qBNecZk_mCQqE6h5wKB6lHJYG/pub?output=csv")
-          .then(r => r.text())
-          .then(t => {
-            const lines = t.trim().split("\n").map(l => l.split(","));
-            setRows(lines);
-          });
-      }, []);
+    const STORAGE_KEY = 'quorum_site_chats_v1';
+
+    function loadChats() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveChats(chats) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
+    }
+
+    function ChatApp() {
+      const [chats, setChats] = React.useState(loadChats());
+      const [input, setInput] = React.useState('');
+
+      const sendMessage = () => {
+        if (!input.trim()) return;
+        const newChats = [...chats, input.trim()];
+        setChats(newChats);
+        saveChats(newChats);
+        setInput('');
+      };
+
       return (
-        <table>
-          <thead>
-            <tr>{rows[0]?.map((h,i)=><th key={i}>{h}</th>)}</tr>
-          </thead>
-          <tbody>
-            {rows.slice(1).map((r,i)=>
-              <tr key={i}>{r.map((c,j)=><td key={j}>{c}</td>)}</tr>
-            )}
-          </tbody>
-        </table>
+        <div>
+          <h1>Quorum Chat</h1>
+          <div>
+            {chats.map((msg, idx) => (
+              <div key={idx} className="chat-message">{msg}</div>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && sendMessage()}
+            placeholder="Type a message..."
+          />
+          <button onClick={sendMessage}>Send</button>
+        </div>
       );
     }
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ChatApp />);
   </script>
 </body>
 </html>
