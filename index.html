@@ -6,237 +6,177 @@
 <title>Teachers Quorum</title>
 <style>
 :root {
-  --primary-start: #81d4fa;
-  --primary-end: #b3e5fc;
-  --accent: #4fc3f7;
-  --accent-hover: #29b6f6;
-  --bg: #e3f2fd;
-  --card-bg: #ffffff;
-  --admin-btn: #0288d1;
+  --accent:#2196f3; --accent-light:#bbdefb; --accent-hover:#1976d2;
+  --bg:#e3f2fd; --card:#fff; --admin:#1565c0;
 }
-
-* { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:'Segoe UI',sans-serif; background: var(--bg); color:#333; min-height:100vh; }
-header { background: linear-gradient(90deg,var(--primary-start),var(--primary-end)); color:white; padding:1rem 2rem; text-align:center; position:relative; }
-header h1 { margin-bottom:0.2rem; }
-#logout-btn { position:absolute; right:20px; top:15px; background:var(--accent); color:white; border:none; padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; transition: transform 0.2s; }
-#logout-btn:hover { background:var(--accent-hover); transform:scale(1.05); }
-
-.container { display:flex; justify-content:center; align-items:center; min-height:80vh; }
-form { background: var(--card-bg); padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); width:320px; }
-input { width:100%; padding:0.6rem; margin:0.5rem 0; border-radius:6px; border:1px solid #ccc; }
-button { width:100%; padding:0.6rem; margin-top:0.5rem; border:none; border-radius:6px; background: var(--accent); color:white; cursor:pointer; transition: transform 0.2s, background 0.2s; }
-button:hover{ background: var(--accent-hover); transform: scale(1.03); }
-a { display:block; text-align:center; margin-top:1rem; color:var(--accent); text-decoration:none; }
-a:hover { text-decoration:underline; }
-
-#main-app { display:none; padding:2rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
-section { background: var(--card-bg); border-radius:12px; padding:1.5rem; box-shadow:0 4px 8px rgba(0,0,0,0.05); }
-h2 { margin-bottom:1rem; color: var(--accent); }
-#messages { border:1px solid #ddd; padding:0.5rem; height:300px; overflow-y:auto; background:#f0f9ff; border-radius:6px; margin-bottom:1rem; }
-.message { padding:0.5rem 0.8rem; margin:0.3rem 0; border-radius:6px; position:relative; opacity:0; animation:fadein 0.3s forwards; }
-.message.you { border-left:4px solid #4dd0e1; }
-.message .author { font-weight:bold; margin-right:0.4rem; }
-#chat-input { margin-bottom:0.5rem; }
-#clear-chat { display:none; background: var(--admin-btn); }
-#clear-chat:hover { background: #0277bd; }
-
-#schedule-table { width:100%; border-collapse: collapse; max-height:300px; overflow:auto; display:block; }
-#schedule-table th, #schedule-table td { padding:0.6rem 0.8rem; border:1px solid #ddd; text-align:left; }
-#schedule-table th { background:#b3e5fc; color:#333; position: sticky; top:0; }
-#schedule-table tr:nth-child(even) { background:#e1f5fe; }
-
-@keyframes fadein { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#333;min-height:100vh}
+header{background:linear-gradient(90deg,#64b5f6,#90caf9);color:#fff;padding:1rem 2rem;text-align:center;position:relative}
+header h1{margin-bottom:.2rem}
+#logout{position:absolute;right:20px;top:15px;background:var(--accent);border:none;color:#fff;padding:.4rem .8rem;border-radius:6px;cursor:pointer}
+.container{display:flex;justify-content:center;align-items:center;min-height:80vh}
+form{background:var(--card);padding:2rem;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);width:320px}
+input{width:100%;padding:.6rem;margin:.5rem 0;border:1px solid #ccc;border-radius:6px}
+button{width:100%;padding:.6rem;margin-top:.5rem;border:none;border-radius:6px;background:var(--accent);color:white;cursor:pointer}
+button:hover{background:var(--accent-hover)}
+a{display:block;text-align:center;margin-top:1rem;color:var(--accent)}
+#main{display:none;padding:2rem;gap:2rem;grid-template-columns:1fr 1fr}
+section{background:var(--card);padding:1.5rem;border-radius:12px;box-shadow:0 4px 8px rgba(0,0,0,0.05)}
+#messages{border:1px solid #ddd;padding:.5rem;height:300px;overflow-y:auto;background:#f5faff;border-radius:6px;margin-bottom:1rem}
+.message{padding:.5rem .8rem;margin:.3rem 0;border-radius:6px;animation:fade .3s}
+.message.you{border-left:4px solid var(--accent)}
+#chat-input{margin-bottom:.5rem}
+#clear{display:none;background:var(--admin)}
+#schedule-table{width:100%;border-collapse:collapse}
+#schedule-table th,#schedule-table td{padding:.6rem .8rem;border:1px solid #ddd}
+#schedule-table th{background:var(--accent-light);position:sticky;top:0}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
 
 <header>
   <h1>Teachers Quorum</h1>
-  <p>Assignments & Chat Hub</p>
-  <button id="logout-btn" onclick="logout()">Logout</button>
+  <button id="logout" onclick="logout()">Logout</button>
 </header>
 
-<!-- Login Form -->
-<div id="login-page" class="container">
-  <form id="loginForm">
+<div id="login" class="container">
+  <form onsubmit="doLogin(event)">
     <h2>Login</h2>
-    <input id="login-email" type="email" placeholder="Email" required />
-    <input id="login-password" type="password" placeholder="Password" required />
-    <button type="submit">Login</button>
+    <input id="login-email" type="email" placeholder="Email" required>
+    <input id="login-pass" type="password" placeholder="Password" required>
+    <button>Login</button>
     <a href="#" onclick="showSignup()">Create Account</a>
   </form>
 </div>
 
-<!-- Signup Form -->
-<div id="signup-page" class="container" style="display:none;">
-  <form id="signupForm">
+<div id="signup" class="container" style="display:none">
+  <form onsubmit="doSignup(event)">
     <h2>Sign Up</h2>
-    <input id="signup-name" type="text" placeholder="Full Name" required />
-    <input id="signup-email" type="email" placeholder="Email" required />
-    <input id="signup-password" type="password" placeholder="Password" required />
-    <button type="submit">Sign Up</button>
+    <input id="signup-name" placeholder="Full Name" required>
+    <input id="signup-email" type="email" placeholder="Email" required>
+    <input id="signup-pass" type="password" placeholder="Password" required>
+    <button>Sign Up</button>
     <a href="#" onclick="showLogin()">Back to Login</a>
   </form>
 </div>
 
-<!-- Main App -->
-<div id="main-app">
-  <section id="assignments">
+<div id="main" style="display:none;grid">
+  <section>
     <h2>Schedule</h2>
     <table id="schedule-table">
-      <thead>
-        <tr><th>Day</th><th>Subject</th><th>Time</th></tr>
-      </thead>
+      <thead><tr><th>Day</th><th>Subject</th><th>Time</th></tr></thead>
       <tbody id="schedule-body"></tbody>
     </table>
   </section>
 
-  <section id="chat">
+  <section>
     <h2>Chat</h2>
     <div id="messages"></div>
-    <input id="chat-input" placeholder="Type a message..." />
+    <input id="chat-input" placeholder="Type a message...">
     <button onclick="sendMessage()">Send</button>
-    <button id="clear-chat" onclick="clearChat()">Clear Chat</button>
+    <button id="clear" onclick="clearChat()">Clear Chat</button>
   </section>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
-// --- Firebase Config ---
+<script>
 const firebaseConfig = {
-  apiKey: "AIzaSyCHvfjuoQUP5E3AeNRty2RxJeUD-vOL_bI",
-  authDomain: "teachers-quorum-site.firebaseapp.com",
-  databaseURL: "https://teachers-quorum-site-default-rtdb.firebaseio.com",
-  projectId: "teachers-quorum-site",
-  storageBucket: "teachers-quorum-site.firebasestorage.app",
-  messagingSenderId: "1036871246524",
-  appId: "1:1036871246524:web:4a4dc6bd9e62f03d9a26b9",
-  measurementId: "G-ZGEJ03HH08"
+  apiKey:"AIzaSyCHvfjuoQUP5E3AeNRty2RxJeUD-vOL_bI",
+  authDomain:"teachers-quorum-site.firebaseapp.com",
+  databaseURL:"https://teachers-quorum-site-default-rtdb.firebaseio.com",
+  projectId:"teachers-quorum-site",
+  storageBucket:"teachers-quorum-site.firebasestorage.app",
+  messagingSenderId:"1036871246524",
+  appId:"1:1036871246524:web:4a4dc6bd9e62f03d9a26b9"
 };
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
+let meName="", meUid="";
 
-let currentUserName = "";
-let currentUserUid = "";
-const userColors = {};
-const pastelColors = ["#b2ebf2","#80deea","#4dd0e1","#a7ffeb","#b9f6ca"];
-
-function showSignup(){ document.getElementById("login-page").style.display="none"; document.getElementById("signup-page").style.display="flex"; }
-function showLogin(){ document.getElementById("signup-page").style.display="none"; document.getElementById("login-page").style.display="flex"; }
-
-onAuthStateChanged(auth,(user)=>{
+auth.onAuthStateChanged(user=>{
   if(user){
-    currentUserName = user.displayName || user.email.split('@')[0];
-    currentUserUid = user.uid;
-    document.getElementById("login-page").style.display="none";
-    document.getElementById("signup-page").style.display="none";
-    document.getElementById("main-app").style.display="grid";
-    document.getElementById("logout-btn").style.display="inline-block";
-    if(user.email==="sterlingwbeck@gmail.com") document.getElementById("clear-chat").style.display="inline-block";
+    meName=user.displayName||user.email.split("@")[0];
+    meUid=user.uid;
+    document.getElementById("login").style.display="none";
+    document.getElementById("signup").style.display="none";
+    document.getElementById("main").style.display="grid";
+    if(user.email==="sterlingwbeck@gmail.com") document.getElementById("clear").style.display="block";
     loadChat();
   }else{
-    document.getElementById("main-app").style.display="none";
-    document.getElementById("logout-btn").style.display="none";
-    document.getElementById("login-page").style.display="flex";
+    document.getElementById("main").style.display="none";
+    document.getElementById("login").style.display="flex";
   }
 });
 
-// --- Signup ---
-document.getElementById("signupForm").addEventListener("submit", async(e)=>{
+function doSignup(e){
   e.preventDefault();
-  const email = document.getElementById("signup-email").value;
-  const password = document.getElementById("signup-password").value;
-  const name = document.getElementById("signup-name").value;
-  try{
-    const cred = await createUserWithEmailAndPassword(auth,email,password);
-    await updateProfile(cred.user,{displayName:name});
-    alert("Account created! Please login.");
-    showLogin();
-  }catch(err){ alert(err.message); }
-});
+  const name=document.getElementById("signup-name").value;
+  const email=document.getElementById("signup-email").value;
+  const pass=document.getElementById("signup-pass").value;
+  auth.createUserWithEmailAndPassword(email,pass).then(c=>{
+    return c.user.updateProfile({displayName:name});
+  }).then(()=>{alert("Account created. Please log in.");showLogin();})
+  .catch(e=>alert(e.message));
+}
 
-// --- Login ---
-document.getElementById("loginForm").addEventListener("submit", async(e)=>{
+function doLogin(e){
   e.preventDefault();
-  const email = document.getElementById("login-email").value;
-  const password = document.getElementById("login-password").value;
-  try{ await signInWithEmailAndPassword(auth,email,password); } 
-  catch(err){ alert("Incorrect email or password."); }
-});
+  const email=document.getElementById("login-email").value;
+  const pass=document.getElementById("login-pass").value;
+  auth.signInWithEmailAndPassword(email,pass).catch(()=>alert("Invalid login."));
+}
 
-// --- Logout ---
-function logout(){ signOut(auth); }
+function logout(){auth.signOut();}
+function showSignup(){login.style.display="none";signup.style.display="flex";}
+function showLogin(){signup.style.display="none";login.style.display="flex";}
 
-// --- Chat ---
 function loadChat(){
-  const messagesRef = ref(db,"messages");
-  onValue(messagesRef,(snapshot)=>{
-    const messagesDiv = document.getElementById("messages");
-    messagesDiv.innerHTML="";
-    snapshot.forEach(snap=>{
-      const msg = snap.val();
-      const div = document.createElement("div");
-      div.className="message"+(msg.uid===currentUserUid?" you":"");
-      if(!userColors[msg.uid]) userColors[msg.uid] = pastelColors[Math.floor(Math.random()*pastelColors.length)];
-      div.style.background=userColors[msg.uid];
-      div.dataset.key=snap.key;
-      div.innerHTML=`<span class="author">${msg.name}:</span> ${msg.text}`;
-      div.addEventListener("contextmenu", e=>{
-        e.preventDefault();
-        if(msg.uid===currentUserUid){
-          const newText = prompt("Edit your message:",msg.text);
-          if(newText!==null) update(ref(db,"messages/"+snap.key),{text:newText});
-        }
-      });
-      div.addEventListener("click",()=>{
-        if(msg.uid===currentUserUid && confirm("Delete this message?")) remove(ref(db,"messages/"+snap.key));
-      });
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop=messagesDiv.scrollHeight;
+  const msgRef=db.ref("messages");
+  msgRef.on("value",snap=>{
+    messages.innerHTML="";
+    snap.forEach(s=>{
+      const m=s.val();
+      const div=document.createElement("div");
+      div.className="message"+(m.uid===meUid?" you":"");
+      div.textContent=`${m.name}: ${m.text}`;
+      div.onclick=()=>{
+        if(m.uid===meUid && confirm("Delete message?")) db.ref("messages/"+s.key).remove();
+      }
+      messages.appendChild(div);
+      messages.scrollTop=messages.scrollHeight;
     });
   });
 }
 
-window.sendMessage = function(){
-  const input = document.getElementById("chat-input");
-  const text = input.value.trim();
-  if(text==="") return;
-  push(ref(db,"messages"),{text,name:currentUserName,uid:currentUserUid});
-  input.value="";
-};
-
-window.clearChat = function(){
-  if(confirm("Are you sure you want to clear all chat?")){
-    remove(ref(db,"messages"));
-  }
-};
-
-// --- Google Sheets Schedule ---
-const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR48S8GQkZM2S1PMXsXjE48eGwryPuD5efwj2_RCHPsbCiMAScSiH7qBNecZk_mCQqE6h5wKB6lHJYG/pub?output=csv";
-
-async function loadSchedule(){
-  const res = await fetch(csvUrl);
-  const text = await res.text();
-  const rows = text.split("\n").filter(r=>r.trim()!=="");
-  const tbody = document.getElementById("schedule-body");
-  tbody.innerHTML="";
-  for(let i=1;i<rows.length;i++){
-    const cells = rows[i].split(",");
-    const tr = document.createElement("tr");
-    cells.forEach(c=>{
-      const td = document.createElement("td"); td.textContent=c; tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  }
+function sendMessage(){
+  const t=chat-input.value.trim(); if(!t) return;
+  db.ref("messages").push({text:t,name:meName,uid:meUid});
+  chat-input.value="";
 }
-loadSchedule();
 
+function clearChat(){
+  if(confirm("Clear all chat?")) db.ref("messages").remove();
+}
+
+// Load Google Sheet
+fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vR48S8GQkZM2S1PMXsXjE48eGwryPuD5efwj2_RCHPsbCiMAScSiH7qBNecZk_mCQqE6h5wKB6lHJYG/pub?output=csv")
+.then(r=>r.text()).then(t=>{
+  const rows=t.split("\n").slice(1);
+  rows.forEach(r=>{
+    const c=r.split(",");
+    if(c[0]){
+      const tr=document.createElement("tr");
+      c.forEach(x=>{const td=document.createElement("td");td.textContent=x;tr.appendChild(td)});
+      schedule-body.appendChild(tr);
+    }
+  });
+});
 </script>
 </body>
 </html>
