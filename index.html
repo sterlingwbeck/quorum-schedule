@@ -6,39 +6,43 @@
 <title>Teachers Quorum</title>
 <style>
 :root {
-  --primary: #5c6bc0;
-  --accent: #7e57c2;
-  --bg: #f5f7fb;
+  --primary-start: #81d4fa;
+  --primary-end: #b3e5fc;
+  --accent: #4fc3f7;
+  --accent-hover: #29b6f6;
+  --bg: #e3f2fd;
   --card-bg: #ffffff;
+  --admin-btn: #0288d1;
 }
 
-* { box-sizing: border-box; margin:0; padding:0; }
-body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color:#333; }
-
-header { background: linear-gradient(90deg, var(--primary), var(--accent)); color:white; padding:1rem 2rem; text-align:center; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Segoe UI',sans-serif; background: var(--bg); color:#333; }
+header { background: linear-gradient(90deg,var(--primary-start),var(--primary-end)); color:white; padding:1rem 2rem; text-align:center; position:relative; }
 header h1 { margin-bottom:0.2rem; }
-header p { font-size:0.9rem; margin-bottom:0.5rem; }
-#logout-btn { float:right; background:#d32f2f; margin-top:-40px; }
-#logout-btn:hover { background:#b71c1c; }
+#logout-btn { position:absolute; right:20px; top:15px; background:var(--accent); color:white; border:none; padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; transition: transform 0.2s; }
+#logout-btn:hover { background:var(--accent-hover); transform:scale(1.05); }
 
 .container { display:flex; justify-content:center; align-items:center; min-height:80vh; }
-form { background: var(--card-bg); padding:2rem; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); width:320px; }
+form { background: var(--card-bg); padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); width:320px; }
 input { width:100%; padding:0.6rem; margin:0.5rem 0; border-radius:6px; border:1px solid #ccc; }
-button { width:100%; padding:0.6rem; margin-top:0.5rem; border:none; border-radius:6px; background: var(--primary); color:white; cursor:pointer; }
-button:hover{ background: var(--accent); }
-a { display:block; text-align:center; margin-top:1rem; color:var(--primary); text-decoration:none; }
+button { width:100%; padding:0.6rem; margin-top:0.5rem; border:none; border-radius:6px; background: var(--accent); color:white; cursor:pointer; transition: transform 0.2s, background 0.2s; }
+button:hover{ background: var(--accent-hover); transform: scale(1.03); }
+a { display:block; text-align:center; margin-top:1rem; color:var(--accent); text-decoration:none; }
 a:hover { text-decoration:underline; }
 
-#main-app { display:none; padding:2rem; grid-template-columns:1fr 1fr; gap:2rem; display:grid; }
+#main-app { display:none; padding:2rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
 section { background: var(--card-bg); border-radius:12px; padding:1.5rem; box-shadow:0 4px 8px rgba(0,0,0,0.05); }
-h2 { margin-bottom:1rem; color: var(--primary); }
-#messages { border:1px solid #ddd; padding:0.5rem; height:300px; overflow-y:auto; background:#fafafa; border-radius:6px; margin-bottom:1rem; }
-.message { padding:0.4rem 0.6rem; margin:0.3rem 0; background:#e8eaf6; border-radius:6px; position:relative; }
-.message.you { background:#d1c4e9; }
+h2 { margin-bottom:1rem; color: var(--accent); }
+#messages { border:1px solid #ddd; padding:0.5rem; height:300px; overflow-y:auto; background:#f0f9ff; border-radius:6px; margin-bottom:1rem; }
+.message { padding:0.5rem 0.8rem; margin:0.3rem 0; border-radius:6px; position:relative; opacity:0; animation:fadein 0.3s forwards; }
+.message.you { border-left:4px solid #4dd0e1; }
 .message .author { font-weight:bold; margin-right:0.4rem; }
 #chat-input { margin-bottom:0.5rem; }
-#clear-chat { display:none; }
+#clear-chat { display:none; background: var(--admin-btn); }
+#clear-chat:hover { background: #0277bd; }
 #schedule-frame { width:100%; height:300px; border:none; border-radius:6px; }
+
+@keyframes fadein { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
 </style>
 </head>
 <body>
@@ -110,12 +114,12 @@ const auth = getAuth(app);
 
 let currentUserName = "";
 let currentUserUid = "";
+const userColors = {}; // store color per user
+const pastelColors = ["#b2ebf2","#80deea","#4dd0e1","#a7ffeb","#b9f6ca"];
 
-// Show login or signup
 function showSignup(){ document.getElementById("login-page").style.display="none"; document.getElementById("signup-page").style.display="flex"; }
 function showLogin(){ document.getElementById("signup-page").style.display="none"; document.getElementById("login-page").style.display="flex"; }
 
-// Auth state
 onAuthStateChanged(auth,(user)=>{
   if(user){
     currentUserName = user.displayName || user.email.split('@')[0];
@@ -133,7 +137,6 @@ onAuthStateChanged(auth,(user)=>{
   }
 });
 
-// Signup
 document.getElementById("signupForm").addEventListener("submit", async e=>{
   e.preventDefault();
   const name = document.getElementById("signup-name").value;
@@ -148,20 +151,16 @@ document.getElementById("signupForm").addEventListener("submit", async e=>{
   }catch(err){ alert(err.message); }
 });
 
-// Login
 document.getElementById("loginForm").addEventListener("submit", async e=>{
   e.preventDefault();
   const email = document.getElementById("login-email").value;
   const password = document.getElementById("login-password").value;
-  try{
-    await signInWithEmailAndPassword(auth,email,password);
-  }catch(err){ alert("Incorrect email or password."); }
+  try{ await signInWithEmailAndPassword(auth,email,password); }
+  catch(err){ alert("Incorrect email or password."); }
 });
 
-// Logout
 function logout(){ signOut(auth); }
 
-// Chat functions
 function sendMessage(){
   const input = document.getElementById("chat-input");
   if(input.value.trim()){
@@ -178,7 +177,9 @@ function loadChat(){
       const m = child.val();
       const div = document.createElement("div");
       div.className="message"+(m.uid===currentUserUid?" you":"");
-      div.dataset.key=child.key;
+      if(!userColors[m.uid]) userColors[m.uid] = pastelColors[Math.floor(Math.random()*pastelColors.length)];
+      div.style.background = userColors[m.uid];
+      div.dataset.key = child.key;
       div.innerHTML=`<span class="author">${m.author}:</span> ${m.text}`;
       div.addEventListener("contextmenu",e=>{
         e.preventDefault();
@@ -195,7 +196,6 @@ function loadChat(){
   });
 }
 
-// Admin clear chat
 function clearChat(){
   if(confirm("Are you sure you want to clear all messages?")){
     remove(ref(db,'messages'));
