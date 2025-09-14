@@ -57,14 +57,12 @@
 <script type="text/babel">
 // --------- Firebase Config ---------
 const firebaseConfig = {
-  apiKey: "AIzaSyCHvfjuoQUP5E3AeNRty2RxJeUD-vOL_bI",
-  authDomain: "teachers-quorum-site.firebaseapp.com",
-  databaseURL: "https://teachers-quorum-site-default-rtdb.firebaseio.com",
-  projectId: "teachers-quorum-site",
-  storageBucket: "teachers-quorum-site.firebasestorage.app",
-  messagingSenderId: "1036871246524",
-  appId: "1:1036871246524:web:4a4dc6bd9e62f03d9a26b9",
-  measurementId: "G-ZGEJ03HH08"
+  apiKey: "AIzaSyCku0BT6vXyXnrCZIPjt2I51uwV1oBJfv0",
+  authDomain: "teachers-quorum-site-58b5a.firebaseapp.com",
+  projectId: "teachers-quorum-site-58b5a",
+  storageBucket: "teachers-quorum-site-58b5a.firebasestorage.app",
+  messagingSenderId: "80149867472",
+  appId: "1:80149867472:web:e00274042a5f14a36fe7d5"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -85,7 +83,6 @@ function App() {
 
   React.useEffect(()=>{ document.body.className = dark ? '' : 'light'; },[dark]);
 
-  // Listen to auth changes
   React.useEffect(()=>{
     auth.onAuthStateChanged(u=>{
       if(u){ setUser(u); setUsername(u.displayName || u.email.split('@')[0]); }
@@ -93,20 +90,19 @@ function App() {
     });
   },[]);
 
-  // Load chat
   React.useEffect(()=>{
     const chatRef = db.ref('messages');
     chatRef.on('value', snapshot=>{
       const data = snapshot.val() || {};
-      const chatArray = Object.values(data).sort((a,b)=>a.time-b.time);
+      const chatArray = Object.entries(data).map(([key, val])=>({key, ...val})).sort((a,b)=>a.time-b.time);
       setMessages(chatArray);
     });
   },[]);
 
-  // Auto-scroll
-  React.useEffect(()=>{ if(chatWindowRef.current) chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight; },[messages]);
+  React.useEffect(()=>{
+    if(chatWindowRef.current) chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
+  },[messages]);
 
-  // Load schedule
   React.useEffect(()=>{
     const sheetUrl='https://docs.google.com/spreadsheets/d/e/2PACX-1vR48S8GQkZM2S1PMXsXjE48eGwryPuD5efwj2_RCHPsbCiMAScSiH7qBNecZk_mCQqE6h5wKB6lHJYG/pub?output=csv';
     fetch(sheetUrl).then(r=>r.text()).then(csvText=>{
@@ -117,22 +113,17 @@ function App() {
 
   const sendMessage=()=>{
     if(!input.trim()) return;
-    const msg = {
-      user: username,
-      uid: user.uid,
-      text: input.trim(),
-      time: Date.now()
-    };
+    const msg = { user: username, uid: user.uid, text: input.trim(), time: Date.now() };
     db.ref('messages').push(msg);
     setInput('');
   };
 
-  const deleteMessage=(msgUid, key)=>{
+  const deleteMessage=(msgUid,key)=>{
     if(user.uid===msgUid || user.email==='sterlingwbeck@gmail.com')
       db.ref('messages/'+key).remove();
   };
 
-  const editMessage=(msgUid, key, oldText)=>{
+  const editMessage=(msgUid,key,oldText)=>{
     if(user.uid===msgUid){
       const newText = prompt('Edit your message:', oldText);
       if(newText!==null) db.ref('messages/'+key).update({text:newText});
@@ -155,10 +146,8 @@ function App() {
 
   const formatTime=ts=>{ const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); };
   const userColor=user=>{
-    let hash=0;
-    for(let i=0;i<user.length;i++){ hash=user.charCodeAt(i)+((hash<<5)-hash); }
-    const c=(hash&0x00FFFFFF).toString(16).toUpperCase();
-    return '#'+('00000'+c).slice(-6);
+    let hash=0; for(let i=0;i<user.length;i++){ hash=user.charCodeAt(i)+((hash<<5)-hash); }
+    const c=(hash&0x00FFFFFF).toString(16).toUpperCase(); return '#'+('00000'+c).slice(-6);
   };
 
   if(!user) return <div className="login-box">
@@ -179,16 +168,16 @@ function App() {
 
       {tab==='chat' && <>
         <div className="chat-window" ref={chatWindowRef}>
-          {Object.entries(messages).map(([key,m])=>(
-            <div key={key} className="chat-message">
+          {messages.map(m=>(
+            <div key={m.key} className="chat-message">
               <div className="chat-bubble" style={{backgroundColor:userColor(m.user)}}>
                 <span className="chat-username">{m.user}</span>
                 {m.email==='sterlingwbeck@gmail.com' && <span className="admin-badge">ADMIN</span>}:
                 {m.text}
                 <span className="chat-time">{formatTime(m.time)}</span>
                 {(m.uid===user.uid || user.email==='sterlingwbeck@gmail.com') && <>
-                  <button className="edit-btn" onClick={()=>editMessage(m.uid,key,m.text)}>Edit</button>
-                  <button className="delete-btn" onClick={()=>deleteMessage(m.uid,key)}>Delete</button>
+                  <button className="edit-btn" onClick={()=>editMessage(m.uid,m.key,m.text)}>Edit</button>
+                  <button className="delete-btn" onClick={()=>deleteMessage(m.uid,m.key)}>Delete</button>
                 </>}
               </div>
             </div>
@@ -201,12 +190,8 @@ function App() {
       </>}
 
       {tab==='schedule' && <table>
-        <thead>
-          <tr>{schedule[0] && schedule[0].map((h,i)=><th key={i}>{h}</th>)}</tr>
-        </thead>
-        <tbody>
-          {schedule.slice(1).map((row,i)=><tr key={i}>{row.map((c,j)=><td key={j}>{c}</td>)}</tr>)}
-        </tbody>
+        <thead><tr>{schedule[0] && schedule[0].map((h,i)=><th key={i}>{h}</th>)}</tr></thead>
+        <tbody>{schedule.slice(1).map((row,i)=><tr key={i}>{row.map((c,j)=><td key={j}>{c}</td>)}</tr>)}</tbody>
       </table>}
     </div>
   );
