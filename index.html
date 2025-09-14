@@ -1,147 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Quorum Chat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: sans-serif; background:#121212; color:white; margin:0; }
-    #chat, #login, #signup { display:none; max-width:600px; margin: 20px auto; }
-    .message { padding:8px; border-bottom:1px solid #333; }
-    .message.mine { background:#1e1e1e; }
-    #messages { height:300px; overflow-y:auto; border:1px solid #444; margin-bottom:10px; padding:5px; background:#181818; }
-    input, button { padding:8px; margin:5px 0; width:100%; border:none; border-radius:4px; }
-    input { background:#2a2a2a; color:white; }
-    button { background:#3b82f6; color:white; cursor:pointer; }
-    button:hover { background:#2563eb; }
-    #clearBtn { background:#ef4444; }
-    #clearBtn:hover { background:#dc2626; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teachers Quorum</title>
+<style>
+  :root {
+    --primary: #5c6bc0;
+    --accent: #7e57c2;
+    --bg: #f5f7fb;
+    --card-bg: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color:#333; }
+  header { background: linear-gradient(90deg, var(--primary), var(--accent)); color:white; padding:1rem 2rem; text-align:center; }
+  main { display:grid; grid-template-columns:1fr 1fr; gap:2rem; padding:2rem; }
+  section { background: var(--card-bg); border-radius:12px; padding:1.5rem; box-shadow:0 4px 8px rgba(0,0,0,0.05); }
+  h2 { margin-bottom:1rem; color: var(--primary); }
+  input { width:100%; padding:0.5rem; margin:0.3rem 0; border:1px solid #ccc; border-radius:6px; }
+  button { background: var(--primary); color:white; border:none; padding:0.6rem 1rem; border-radius:6px; cursor:pointer; margin-top:0.5rem; }
+  button:hover { background: var(--accent); }
+  #messages { border:1px solid #ddd; padding:0.5rem; height:300px; overflow-y:auto; background:#fafafa; border-radius:6px; margin-bottom:1rem; }
+  .message { padding:0.4rem 0.6rem; margin:0.3rem 0; background:#e8eaf6; border-radius:6px; position:relative; }
+  .message.you { background:#d1c4e9; }
+  .message .author { font-weight:bold; margin-right:0.4rem; }
+  #signup-page { display:none; padding:2rem; max-width:400px; margin:4rem auto; background: var(--card-bg); border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+  #signup-page input { margin-bottom:10px; }
+  #schedule-frame { width:100%; height:300px; border:none; border-radius:6px; }
+  #logout-btn { float:right; background:#d32f2f; margin-top:-40px; }
+  #logout-btn:hover { background:#b71c1c; }
+</style>
 </head>
 <body>
-  <h1 style="text-align:center;">Quorum Chat</h1>
+<header>
+  <h1>Teachers Quorum</h1>
+  <p>Assignments & Chat Hub</p>
+  <button id="logout-btn" style="display:none;" onclick="logout()">Logout</button>
+</header>
 
-  <div id="login">
-    <h2>Login</h2>
-    <input id="loginEmail" placeholder="Email">
-    <input id="loginPass" placeholder="Password" type="password">
-    <button id="loginBtn">Login</button>
-    <p>New user? <a href="#" id="goSignup">Sign up</a></p>
-  </div>
+<!-- Signup Page -->
+<div id="signup-page">
+  <h2>Sign Up</h2>
+  <input id="signup-name" type="text" placeholder="Full Name" />
+  <input id="signup-email" type="email" placeholder="Email" />
+  <input id="signup-password" type="password" placeholder="Password" />
+  <button onclick="signup()">Create Account</button>
+</div>
 
-  <div id="signup">
-    <h2>Sign Up</h2>
-    <input id="signupName" placeholder="Display Name">
-    <input id="signupEmail" placeholder="Email">
-    <input id="signupPass" placeholder="Password" type="password">
-    <button id="signupBtn">Create Account</button>
-    <p>Already have an account? <a href="#" id="goLogin">Login</a></p>
-  </div>
+<!-- Main App -->
+<main id="main-content" style="display:none;">
+  <section id="assignments">
+    <h2>Schedule</h2>
+    <iframe id="schedule-frame" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR48S8GQkZM2S1PMXsXjE48eGwryPuD5efwj2_RCHPsbCiMAScSiH7qBNecZk_mCQqE6h5wKB6lHJYG/pub?output=html"></iframe>
+  </section>
 
-  <div id="chat">
+  <section id="chat">
+    <h2>Chat</h2>
     <div id="messages"></div>
-    <input id="msgInput" placeholder="Type a message...">
-    <button id="sendBtn">Send</button>
-    <button id="clearBtn" style="display:none;">Clear Chat</button>
-  </div>
+    <input id="chat-input" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+    <button id="clear-chat" style="display:none;" onclick="clearChat()">Clear Chat</button>
+  </section>
+</main>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getDatabase, ref, push, onChildAdded, update, remove, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCku0BT6vXyXnrCZIPjt2I51uwV1oBJfv0",
-      authDomain: "teachers-quorum-site-58b5a.firebaseapp.com",
-      databaseURL: "https://teachers-quorum-site-default-rtdb.firebaseio.com",
-      projectId: "teachers-quorum-site-58b5a",
-      storageBucket: "teachers-quorum-site-58b5a.firebasestorage.app",
-      messagingSenderId: "80149867472",
-      appId: "1:80149867472:web:e00274042a5f14a36fe7d5"
-    };
+// Your Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCHvfjuoQUP5E3AeNRty2RxJeUD-vOL_bI",
+  authDomain: "teachers-quorum-site.firebaseapp.com",
+  databaseURL: "https://teachers-quorum-site-default-rtdb.firebaseio.com",
+  projectId: "teachers-quorum-site",
+  storageBucket: "teachers-quorum-site.firebasestorage.app",
+  messagingSenderId: "1036871246524",
+  appId: "1:1036871246524:web:4a4dc6bd9e62f03d9a26b9",
+  measurementId: "G-ZGEJ03HH08"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
 
-    const loginDiv = document.getElementById('login');
-    const signupDiv = document.getElementById('signup');
-    const chatDiv = document.getElementById('chat');
-    const messagesDiv = document.getElementById('messages');
-    const sendBtn = document.getElementById('sendBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const msgInput = document.getElementById('msgInput');
+let currentUserName = "";
+let currentUserUid = "";
 
-    document.getElementById('goSignup').onclick = () => { loginDiv.style.display='none'; signupDiv.style.display='block'; }
-    document.getElementById('goLogin').onclick = () => { signupDiv.style.display='none'; loginDiv.style.display='block'; }
-
-    document.getElementById('loginBtn').onclick = async () => {
-      try {
-        await signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value);
-      } catch (e) { alert('Login failed: '+e.message); }
-    };
-
-    document.getElementById('signupBtn').onclick = async () => {
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, signupEmail.value, signupPass.value);
-        await updateProfile(cred.user, { displayName: signupName.value });
-      } catch (e) { alert('Signup failed: '+e.message); }
-    };
-
-    sendBtn.onclick = async () => {
-      if (!msgInput.value.trim()) return;
-      const msg = {
-        uid: auth.currentUser.uid,
-        name: auth.currentUser.displayName || auth.currentUser.email,
-        text: msgInput.value,
-        timestamp: Date.now()
-      };
-      await push(ref(db, 'messages'), msg);
-      msgInput.value = '';
-    };
-
-    function renderMessage(id, data) {
-      const div = document.createElement('div');
-      div.className = 'message' + (data.uid === auth.currentUser.uid ? ' mine':'');
-      div.textContent = `${data.name} · ${new Date(data.timestamp).toLocaleTimeString()} — ${data.text}`;
-      div.oncontextmenu = async (e) => {
-        e.preventDefault();
-        if (data.uid !== auth.currentUser.uid) return;
-        const choice = confirm("OK to edit, Cancel to delete");
-        if (choice) {
-          const newText = prompt("Edit message:", data.text);
-          if (newText) await update(ref(db, 'messages/'+id), { text: newText });
-        } else {
-          await remove(ref(db, 'messages/'+id));
-        }
-      };
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+// Auth state
+onAuthStateChanged(auth, (user)=>{
+  if(user){
+    currentUserName = user.displayName || user.email.split('@')[0];
+    currentUserUid = user.uid;
+    document.getElementById("signup-page").style.display = "none";
+    document.getElementById("main-content").style.display = "grid";
+    document.getElementById("logout-btn").style.display = "inline-block";
+    if(user.email === "sterlingwbeck@gmail.com"){
+      document.getElementById("clear-chat").style.display = "inline-block";
     }
+    loadChat();
+  }else{
+    document.getElementById("signup-page").style.display = "block";
+    document.getElementById("main-content").style.display = "none";
+    document.getElementById("logout-btn").style.display = "none";
+  }
+});
 
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        loginDiv.style.display='block';
-        signupDiv.style.display='none';
-        chatDiv.style.display='none';
-        return;
-      }
-      loginDiv.style.display='none';
-      signupDiv.style.display='none';
-      chatDiv.style.display='block';
-      if (user.email === 'sterlingwbeck@gmail.com') clearBtn.style.display='block';
-      messagesDiv.innerHTML='';
-      onChildAdded(ref(db, 'messages'), snap => {
-        renderMessage(snap.key, snap.val());
+// Signup
+window.signup = async function(){
+  const name = document.getElementById("signup-name").value;
+  const email = document.getElementById("signup-email").value;
+  const password = document.getElementById("signup-password").value;
+  if(!name || !email || !password){ alert("Fill all fields!"); return; }
+  try{
+    const cred = await createUserWithEmailAndPassword(auth,email,password);
+    await updateProfile(cred.user,{displayName:name});
+    await push(ref(db,'users/'),{uid:cred.user.uid,name,email});
+  }catch(e){ alert(e.message);}
+};
+
+// Logout
+window.logout = function(){
+  signOut(auth);
+};
+
+// Chat
+window.sendMessage = function(){
+  const input = document.getElementById("chat-input");
+  if(input.value.trim()){
+    push(ref(db,'messages'),{text:input.value,author:currentUserName,uid:currentUserUid});
+    input.value="";
+  }
+};
+
+function loadChat(){
+  onValue(ref(db,'messages'),(snap)=>{
+    const msgBox = document.getElementById("messages");
+    msgBox.innerHTML="";
+    snap.forEach(child=>{
+      const m = child.val();
+      const div = document.createElement("div");
+      div.className="message"+(m.uid===currentUserUid?" you":"");
+      div.dataset.key=child.key;
+      div.innerHTML=`<span class="author">${m.author}:</span> ${m.text}`;
+      // Right-click / long-press for edit/delete
+      div.addEventListener("contextmenu",e=>{
+        e.preventDefault();
+        if(m.uid===currentUserUid){
+          const newText=prompt("Edit your message:",m.text);
+          if(newText===null) return;
+          else if(newText==="") remove(ref(db,'messages/'+child.key));
+          else update(ref(db,'messages/'+child.key),{text:newText});
+        }
       });
+      msgBox.appendChild(div);
     });
+    msgBox.scrollTop = msgBox.scrollHeight;
+  });
+}
 
-    clearBtn.onclick = async () => {
-      if (confirm("Clear all messages?")) {
-        await set(ref(db, 'messages'), null);
-      }
-    };
-  </script>
+// Admin clear chat
+window.clearChat = function(){
+  if(confirm("Are you sure you want to clear all messages?")){
+    remove(ref(db,'messages'));
+  }
+};
+
+</script>
 </body>
 </html>
-
